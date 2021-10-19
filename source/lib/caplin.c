@@ -39,14 +39,18 @@ static atomic_bool appExitProgram;
 /****************************************************************************************
 * External function prototypes
 ****************************************************************************************/
+/* OnPreStart is called upon program startup, before connecting to the CAN network. */
+extern void OnPreStart(void);
 /* OnStart is called upon program startup, after connecting to the CAN network. */
-void OnStart(void);
+extern void OnStart(void);
+/* OnPreStop is called upon program exit, before disconnecting from the CAN network. */
+extern void OnPreStop(void);
 /* OnStop is called upon program exit, after disconnecting from the CAN network. */
-void OnStop(void);
+extern void OnStop(void);
 /* OnMessage is called each time a new CAN message was received. */
-void OnMessage(tCanMsg const * msg);
+extern void OnMessage(tCanMsg const * msg);
 /* OnKey is called each time a key was pressed on the keyboard. */
-void OnKey(char key);
+extern void OnKey(char key);
 
 
 /****************************************************************************************
@@ -77,6 +81,8 @@ int main(void)
 
   /* Register interrupt signal handler for when CTRL+C was pressed. */
   signal(SIGINT,AppInterruptSignalHandler);
+  /* Call the OnPreStart callback. */
+  OnPreStart();
   /* Connect to the CAN bus. */
   if (!CanConnect(canDevice))
   {
@@ -94,6 +100,8 @@ int main(void)
     UtilSleep(50 * 1000);
   }
 
+  /* Call the OnPreStop callback. */
+  OnPreStop();
   /* Disconnect from the CAN bus. */
   CanDisconnect();
   /* Call the OnStop callback. */
@@ -144,6 +152,88 @@ static void AppInterruptSignalHandler(int signum)
   /* Set request flag to exit the program when the CTRL+C key combo was pressed. */
   atomic_store(&appExitProgram, true);
 } /*** end of AppInterruptSignalHandler ***/
+
+
+/************************************************************************************//**
+** \brief     Default callback that gets called upon startup, before connecting to the
+**            CAN network.
+**
+****************************************************************************************/
+__attribute__((weak)) void OnPreStart(void)
+{
+  /* Do not implement your application functionality here. Instead copy this function
+   * to your application's source file and exluce the __attribute__((weak)) part. That
+   * way the version you implement in your application overrides this one.
+   */
+} /*** end of OnPreStart ***/
+
+
+/************************************************************************************//**
+** \brief     Default callback that gets called upon startup.
+**
+****************************************************************************************/
+__attribute__((weak)) void OnStart(void)
+{
+  /* Do not implement your application functionality here. Instead copy this function
+   * to your application's source file and exluce the __attribute__((weak)) part. That
+   * way the version you implement in your application overrides this one.
+   */
+} /*** end of OnStart ***/
+
+
+/************************************************************************************//**
+** \brief     Default callback that gets called upon exit, before disconnecting from the
+**            CAN network.
+**
+****************************************************************************************/
+__attribute__((weak)) void OnPreStop(void)
+{
+  /* Do not implement your application functionality here. Instead copy this function
+   * to your application's source file and exluce the __attribute__((weak)) part. That
+   * way the version you implement in your application overrides this one.
+   */
+} /*** end of OnPreStop ***/
+
+
+/************************************************************************************//**
+** \brief     Default callback that gets called upon exit.
+**
+****************************************************************************************/
+__attribute__((weak)) void OnStop(void)
+{
+  /* Do not implement your application functionality here. Instead copy this function
+   * to your application's source file and exluce the __attribute__((weak)) part. That
+   * way the version you implement in your application overrides this one.
+   */
+} /*** end of OnStop ***/
+
+
+/************************************************************************************//**
+** \brief     Default callback that gets called upon reception of a CAN message.
+** \param     msg Pointer to the received CAN message.
+**
+****************************************************************************************/
+__attribute__((weak)) void OnMessage(tCanMsg const * msg)
+{
+  /* Do not implement your application functionality here. Instead copy this function
+   * to your application's source file and exluce the __attribute__((weak)) part. That
+   * way the version you implement in your application overrides this one.
+   */
+} /*** end of OnMessage ***/
+
+
+/************************************************************************************//**
+** \brief     Default callback that gets called upon keyboard key pressed event.
+** \param     key ASCII code of the pressed key.
+**
+****************************************************************************************/
+__attribute__((weak)) void OnKey(char key)
+{
+  /* Do not implement your application functionality here. Instead copy this function
+   * to your application's source file and exluce the __attribute__((weak)) part. That
+   * way the version you implement in your application overrides this one.
+   */
+} /*** end of OnKey ***/
 
 
 /*********************************** end of caplin.c ***********************************/
