@@ -13,6 +13,8 @@
 #include <stdlib.h>                         /* for standard library                    */
 #include <stdatomic.h>                      /* Atomic operations                       */
 #include <signal.h>                         /* Signal handling                         */
+#include <string.h>                         /* for string library                      */
+#include <getopt.h>                         /* Command line parsing                    */
 #include "util.h"                           /* Utility functions                       */
 #include "timer.h"                          /* Timer driver                            */
 #include "keys.h"                           /* Input key detection driver              */
@@ -20,13 +22,13 @@
 
 
 /****************************************************************************************
-* Local constant declarations
+* Global data declarations
 ****************************************************************************************/
 /** \brief Name of the SocketCAN device to use. Run 'ip addr | grep "can" for a list of
  *  all available CAN network interfaces and update this value to whichever CAN network
  *  interface you want to use.
  */
-static const char * canDevice = "vcan0";
+char canDevice[256] = "vcan0";
 
 
 /****************************************************************************************
@@ -34,6 +36,9 @@ static const char * canDevice = "vcan0";
 ****************************************************************************************/
 /** \brief Atomic boolean that is used to request a program exit. */
 static atomic_bool appExitProgram;
+
+/** \brief Boolean flag to determine if the help info should be displayed. */
+static bool appArgHelp;
 
 
 /****************************************************************************************
@@ -56,6 +61,8 @@ extern void OnKey(char key);
 /****************************************************************************************
 * Function prototypes
 ****************************************************************************************/
+static void AppParseArguments(int argc, char *argv[]);
+static void AppDisplayHelp(char * appName);
 static void AppKeyPressedCallback(char key);
 static void AppInterruptSignalHandler(int signum);
 
@@ -67,10 +74,25 @@ static void AppInterruptSignalHandler(int signum);
 ** \return    Program return code. 0 for success, error code otherwise.
 **
 ****************************************************************************************/
-int main(void)
+int main(int argc, char *argv[])
 {
+  bool canConnected = false;
+
   /* Initialize locals. */
   atomic_init(&appExitProgram, false);
+  appArgHelp = false;
+
+  /* Parse the command line arguments. */
+  AppParseArguments(argc, argv);
+
+  /* Should program usage be displayed? */
+  if (appArgHelp)
+  {
+    /* Display usage information. */
+    AppDisplayHelp(argv[0]);
+    /* Exit the program. */
+    return EXIT_SUCCESS;
+  }
 
   /* Initialize the timer driver. */
   TimerInit();
@@ -84,26 +106,36 @@ int main(void)
   /* Call the OnPreStart callback. */
   OnPreStart();
   /* Connect to the CAN bus. */
-  if (!CanConnect(canDevice))
-  {
-    printf("Could not connect to CAN network interface %s.\n", canDevice);
-  }
-  /* Call the OnStart callback. */
-  OnStart();
+  canConnected = CanConnect(canDevice);
 
-  /* Enter the program loop until an exit is requested. */
-  while (!atomic_load(&appExitProgram))
+  /* Only run the actual CAN application if connected. */
+  if (!canConnected)
   {
-    /* Noting to do here, because the user's CAN application is event driven. Just 
-     * delay a little to not starve the CPU. 
-     */
-    UtilSleep(50 * 1000);
+    /* Display usage information. */
+    AppDisplayHelp(argv[0]);
+    /* Display error message. */
+    printf("ERROR: Could not connect to SocketCAN network interface \"%s\".\n", canDevice);
+  }
+  else
+  {
+    /* Call the OnStart callback. */
+    OnStart();
+
+    /* Enter the program loop until an exit is requested. */
+    while (!atomic_load(&appExitProgram))
+    {
+      /* Noting to do here, because the user's CAN application is event driven. Just 
+       * delay a little to not starve the CPU. 
+      */
+      UtilSleep(50 * 1000);
+    }
+
+    /* Call the OnPreStop callback. */
+    OnPreStop();
+    /* Disconnect from the CAN bus. */
+    CanDisconnect();
   }
 
-  /* Call the OnPreStop callback. */
-  OnPreStop();
-  /* Disconnect from the CAN bus. */
-  CanDisconnect();
   /* Call the OnStop callback. */
   OnStop();
 
@@ -117,6 +149,79 @@ int main(void)
   /* Exit the program. */
   return EXIT_SUCCESS;
 } /*** end of main ***/
+
+
+/************************************************************************************//**
+** \brief     Parses the program's command line arguments.
+** \param     argc Number of program arguments.
+** \param     argv Array with program arguments.
+**
+****************************************************************************************/
+static void AppParseArguments(int argc, char *argv[])
+{
+  int c;
+
+  /* Process arguments one-by-one. */
+  while (1) 
+  {
+    int option_index = 0;
+    static struct option long_options[] = 
+    {
+      { "help", no_argument, NULL, 'h' },
+      { NULL,   0,           NULL,  0  }
+    };
+
+    /* Get the next argument, */
+    c = getopt_long(argc, argv, "-:h", long_options, &option_index);
+    /* All done? */
+    if (c == -1)
+    {
+      break;
+    }
+
+    /* Filter and process the argument. */
+    switch (c) 
+    {
+      /* Regular option. Must be the preferred SocketCAN interface name. */
+      case 1:
+        /* Store the SocketCAN interface name. */
+        strcpy(canDevice, optarg);
+        break;
+
+      /* Help requested. */
+      case 'h':
+        /* Set flag. */
+        appArgHelp = true;
+        break;
+
+      default:
+        break;
+    }
+  }
+} /*** end of AppParseArguments ***/
+
+
+/************************************************************************************//**
+** \brief     Display program usage on the standard output.
+** \param     appName Application name.
+**
+****************************************************************************************/
+static void AppDisplayHelp(char * appName)
+{
+  printf("Usage: %s [-h] [interface]\n", appName);
+  printf("\n");
+  printf("  Run the SocketCAN node application, using the INTERFACE SocketCAN\n");
+  printf("  network interface. The default INTERFACE is \"vcan0\".\n");
+  printf("\n");
+  printf("  Command 'ip addr | grep \"can\"' lists all available SocketCAN\n");
+  printf("  network interfaces.\n");
+  printf("\n");
+  printf("  Press ESC or CTRL+C to exit.\n");
+  printf("\n");
+  printf("  Options:\n");
+  printf("    -h, --help      Display this help information.\n");
+  printf("\n");
+} /*** end of AppDisplayHelp ***/
 
 
 /************************************************************************************//**

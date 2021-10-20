@@ -16,8 +16,7 @@
 ****************************************************************************************/
 void OnStart(void)
 {
-  printf(">>> CANAPP SocketCAN node application <<<<\n");
-  printf("- 'ESC'-key quits the application\n\n");
+
 } /*** end of OnStart ***/
 
 
@@ -53,4 +52,4 @@ void OnKey(char key)
 } /*** end of OnKey ***/
 
 
-/*********************************** end of caplin.c ***********************************/
+/*********************************** end of canapp.c ***********************************/

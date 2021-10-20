@@ -162,8 +162,8 @@ bool CanConnect(char const * device)
 
     /* Store the current time to be able to have timestamps relative to when the CAN
      * device was connected.
-    */
-   canStartTime = UtilSystemTime();
+     */
+    canStartTime = UtilSystemTime();
 
     /* Create an ifreq structure for passing data in and out of ioctl. */
     strncpy(ifr.ifr_name, device, IFNAMSIZ - 1);
