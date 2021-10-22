@@ -56,10 +56,10 @@ static bool appArgHelp;
 extern void OnPreStart(void);
 /* OnStart is called upon program startup, after connecting to the CAN network. */
 extern void OnStart(void);
-/* OnPreStop is called upon program exit, before disconnecting from the CAN network. */
-extern void OnPreStop(void);
-/* OnStop is called upon program exit, after disconnecting from the CAN network. */
+/* OnStop is called upon program exit, before disconnecting from the CAN network. */
 extern void OnStop(void);
+/* OnPostStop is called upon program exit, after disconnecting from the CAN network. */
+extern void OnPostStop(void);
 /* OnMessage is called each time a new CAN message was received. */
 extern void OnMessage(tCanMsg const * msg);
 /* OnKey is called each time a key was pressed on the keyboard. */
@@ -142,14 +142,15 @@ int main(int argc, char *argv[])
       UtilSleep(50 * 1000);
     }
 
-    /* Call the OnPreStop callback. */
-    OnPreStop();
+    /* Call the OnStop callback. */
+    OnStop();
+
     /* Disconnect from the CAN bus. */
     CanDisconnect();
   }
 
-  /* Call the OnStop callback. */
-  OnStop();
+  /* Call the OnPostStop callback. */
+  OnPostStop();
 
   /* Terminate the timer driver. */
   TimerTerminate();
@@ -386,20 +387,6 @@ __attribute__((weak)) void OnStart(void)
 
 
 /************************************************************************************//**
-** \brief     Default callback that gets called upon exit, before disconnecting from the
-**            CAN network.
-**
-****************************************************************************************/
-__attribute__((weak)) void OnPreStop(void)
-{
-  /* Do not implement your application functionality here. Instead copy this function
-   * to your application's source file and exluce the __attribute__((weak)) part. That
-   * way the version you implement in your application overrides this one.
-   */
-} /*** end of OnPreStop ***/
-
-
-/************************************************************************************//**
 ** \brief     Default callback that gets called upon exit.
 **
 ****************************************************************************************/
@@ -410,6 +397,20 @@ __attribute__((weak)) void OnStop(void)
    * way the version you implement in your application overrides this one.
    */
 } /*** end of OnStop ***/
+
+
+/************************************************************************************//**
+** \brief     Default callback that gets called upon exit, after disconnecting from the
+**            CAN network.
+**
+****************************************************************************************/
+__attribute__((weak)) void OnPostStop(void)
+{
+  /* Do not implement your application functionality here. Instead copy this function
+   * to your application's source file and exluce the __attribute__((weak)) part. That
+   * way the version you implement in your application overrides this one.
+   */
+} /*** end of OnPostStop ***/
 
 
 /************************************************************************************//**
