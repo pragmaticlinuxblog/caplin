@@ -11,7 +11,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 # Add sources
 set(
   PROG_SRCS
-  source/canapp.c
+  source/${PROJECT_NAME}.c
   source/lib/caplin.c
   source/lib/can.c
   source/lib/timer.c

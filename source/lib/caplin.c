@@ -15,6 +15,7 @@
 #include <signal.h>                         /* Signal handling                         */
 #include <string.h>                         /* for string library                      */
 #include <getopt.h>                         /* Command line parsing                    */
+#include <ifaddrs.h>                        /* Listing network interfaces.             */
 #include "util.h"                           /* Utility functions                       */
 #include "timer.h"                          /* Timer driver                            */
 #include "keys.h"                           /* Input key detection driver              */
@@ -63,6 +64,7 @@ extern void OnKey(char key);
 ****************************************************************************************/
 static void AppParseArguments(int argc, char *argv[]);
 static void AppDisplayHelp(char * appName);
+static void AppFindFirstCanInterface(void);
 static void AppKeyPressedCallback(char key);
 static void AppInterruptSignalHandler(int signum);
 
@@ -82,7 +84,9 @@ int main(int argc, char *argv[])
   atomic_init(&appExitProgram, false);
   appArgHelp = false;
 
-  /* Parse the command line arguments. */
+  /* Attempt to locate and use the first SocketCAN interface known on the system. */
+  AppFindFirstCanInterface();
+  /* Parse the command line arguments. This allows an override of the SocketCAN name. */
   AppParseArguments(argc, argv);
 
   /* Should program usage be displayed? */
@@ -185,7 +189,7 @@ static void AppParseArguments(int argc, char *argv[])
       /* Regular option. Must be the preferred SocketCAN interface name. */
       case 1:
         /* Store the SocketCAN interface name. */
-        strcpy(canDevice, optarg);
+        strncpy(canDevice, optarg, sizeof(canDevice)/sizeof(canDevice[0]));
         break;
 
       /* Help requested. */
@@ -211,7 +215,10 @@ static void AppDisplayHelp(char * appName)
   printf("Usage: %s [-h] [interface]\n", appName);
   printf("\n");
   printf("  Run the SocketCAN node application, using the INTERFACE SocketCAN\n");
-  printf("  network interface. The default INTERFACE is \"vcan0\".\n");
+  printf("  network interface.\n");
+  printf("\n");
+  printf("  The default INTERFACE is the first one found on the Linux system,\n");
+  printf("  or \"vcan0\" if none are found.\n");
   printf("\n");
   printf("  Command 'ip addr | grep \"can\"' lists all available SocketCAN\n");
   printf("  network interfaces.\n");
@@ -222,6 +229,51 @@ static void AppDisplayHelp(char * appName)
   printf("    -h, --help      Display this help information.\n");
   printf("\n");
 } /*** end of AppDisplayHelp ***/
+
+
+/************************************************************************************//**
+** \brief     Interates over the list of all network interfaces known to the system, 
+**            until it encounters the first one with "can" in the name. If found, this
+**            one will be configured as the default SocketCAN interface to connect to.
+**
+****************************************************************************************/
+static void AppFindFirstCanInterface(void)
+{
+  struct ifaddrs *ifaddr;
+
+  /* Attempt to obtain access to the linked list with network interfaces. */
+  if (getifaddrs(&ifaddr) == 0) 
+  {
+    /* Loop through linked list, while maintaining head pointer, needed to free the
+     * list later on.
+     */
+    for (struct ifaddrs *ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+    {
+      /* We are interested in the at least the ifa_name element, so only process the
+       * node, when this one is valid.
+       */
+      if (ifa->ifa_name == NULL)
+      {
+        continue;
+      }
+
+      /* Note that a CAN interface doesn't seem to have a valid ifa_addr element. This
+       * unfortunately means that we cannot check if the ifa_addr->sa_family is set to
+       * AF_CAN. However, CAN interfaces are typically named something with "can" in it,
+       * and other network interfaces are not, so look for that.
+       */
+      if (strstr(ifa->ifa_name, "can") != NULL)
+      {
+        /* Store the SocketCAN interface name. */
+        strncpy(canDevice, ifa->ifa_name, sizeof(canDevice)/sizeof(canDevice[0]));
+        /* First SocketCAN device found and stored. No need to continue the loop. */
+        break;
+      }
+    }
+    /* Free the list, now that we are done with it. */
+    freeifaddrs(ifaddr);
+  }
+} /*** end of AppFindFirstCanInterface ***/
 
 
 /************************************************************************************//**
