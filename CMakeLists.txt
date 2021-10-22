@@ -28,5 +28,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   source/lib
 )
 
+# Specify the libraries that should be linked.
+target_link_libraries(${PROJECT_NAME} pthread)
+
 # Specify how to install the binary.
 install (TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
