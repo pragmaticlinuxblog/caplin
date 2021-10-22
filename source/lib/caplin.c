@@ -136,9 +136,9 @@ int main(int argc, char *argv[])
     /* Enter the program loop until an exit is requested. */
     while (!atomic_load(&appExitProgram))
     {
-      /* Noting to do here, because the user's CAN application is event driven. Just 
+      /* Nothing to do here, because the user's CAN application is event driven. Just
        * delay a little to not starve the CPU. 
-      */
+       */
       UtilSleep(50 * 1000);
     }
 
