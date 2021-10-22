@@ -7,6 +7,7 @@
 /****************************************************************************************
 * Include files
 ****************************************************************************************/
+#include <assert.h>                         /* for assertions                          */
 #include <stdint.h>                         /* for standard integer types              */
 #include <stdbool.h>                        /* for boolean type                        */
 #include <stdio.h>                          /* for standard input/output functions     */
@@ -15,6 +16,12 @@
 #include <signal.h>                         /* Signal handling                         */
 #include <string.h>                         /* for string library                      */
 #include <getopt.h>                         /* Command line parsing                    */
+#include <unistd.h>                         /* UNIX standard functions                 */
+#include <net/if.h>                         /* Network interfaces                      */
+#include <linux/if_arp.h>                   /* ARP definitions                         */
+#include <linux/can.h>                      /* CAN kernel definitions                  */
+#include <linux/can/raw.h>                  /* CAN raw sockets                         */
+#include <sys/ioctl.h>                      /* I/O control operations                  */
 #include <ifaddrs.h>                        /* Listing network interfaces.             */
 #include "util.h"                           /* Utility functions                       */
 #include "timer.h"                          /* Timer driver                            */
@@ -29,7 +36,7 @@
  *  all available CAN network interfaces and update this value to whichever CAN network
  *  interface you want to use.
  */
-char canDevice[256] = "vcan0";
+char canDevice[IFNAMSIZ] = "vcan0";
 
 
 /****************************************************************************************
@@ -63,8 +70,9 @@ extern void OnKey(char key);
 * Function prototypes
 ****************************************************************************************/
 static void AppParseArguments(int argc, char *argv[]);
-static void AppDisplayHelp(char * appName);
+static void AppDisplayHelp(char const * appName);
 static void AppFindFirstCanInterface(void);
+static bool AppIsCanInterface(char const * name);
 static void AppKeyPressedCallback(char key);
 static void AppInterruptSignalHandler(int signum);
 
@@ -210,7 +218,7 @@ static void AppParseArguments(int argc, char *argv[])
 ** \param     appName Application name.
 **
 ****************************************************************************************/
-static void AppDisplayHelp(char * appName)
+static void AppDisplayHelp(char const * appName)
 {
   printf("Usage: %s [-h] [interface]\n", appName);
   printf("\n");
@@ -249,31 +257,70 @@ static void AppFindFirstCanInterface(void)
      */
     for (struct ifaddrs *ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
     {
-      /* We are interested in the at least the ifa_name element, so only process the
-       * node, when this one is valid.
+      /* We are interested in the ifa_name element, so only process the node, when this
+       * one is valid.
        */
-      if (ifa->ifa_name == NULL)
+      if (ifa->ifa_name != NULL)
       {
-        continue;
-      }
-
-      /* Note that a CAN interface doesn't seem to have a valid ifa_addr element. This
-       * unfortunately means that we cannot check if the ifa_addr->sa_family is set to
-       * AF_CAN. However, CAN interfaces are typically named something with "can" in it,
-       * and other network interfaces are not, so look for that.
-       */
-      if (strstr(ifa->ifa_name, "can") != NULL)
-      {
-        /* Store the SocketCAN interface name. */
-        strncpy(canDevice, ifa->ifa_name, sizeof(canDevice)/sizeof(canDevice[0]));
-        /* First SocketCAN device found and stored. No need to continue the loop. */
-        break;
+        /* Check if this network interface is actually a CAN interface. */
+        if (AppIsCanInterface(ifa->ifa_name))
+        {
+          /* Store the SocketCAN interface name. */
+          strncpy(canDevice, ifa->ifa_name, sizeof(canDevice)/sizeof(canDevice[0]));
+          /* First SocketCAN device found and stored. No need to continue the loop. */
+          break;
+        }
       }
     }
     /* Free the list, now that we are done with it. */
     freeifaddrs(ifaddr);
   }
 } /*** end of AppFindFirstCanInterface ***/
+
+
+/************************************************************************************//**
+** \brief     Determines if the specified network interface name is a CAN device.
+** \param     name Network interface name. For example obtained by getifaddrs().
+** \return    True is the specified network interface name is a CAN device.
+**
+****************************************************************************************/
+static bool AppIsCanInterface(char const * name)
+{
+  bool result = false;
+  struct ifreq ifr;
+  int canSocket;
+
+  /* Verify parameter. */
+  assert(name != NULL);
+
+  /* Only continue with valid parameter and acceptable length of the interface name. */
+  if ( (name != NULL) && (strlen(name) < IFNAMSIZ) )
+  {
+    /* Create an ifreq structure for passing data in and out of ioctl. */
+    strncpy(ifr.ifr_name, name, IFNAMSIZ - 1);
+    ifr.ifr_name[IFNAMSIZ - 1] = '\0';
+
+    /* Get open socket descriptor */
+    if ((canSocket = socket(PF_CAN, (int)SOCK_RAW, CAN_RAW)) != -1)
+    {
+      /* Obtain the hardware address information. */
+      if (ioctl(canSocket, SIOCGIFHWADDR, &ifr) != -1)
+      {
+        /* Is this a CAN device? */
+        if (ifr.ifr_hwaddr.sa_family == ARPHRD_CAN)
+        {
+          /* Update the result accordingly. */
+          result = true;
+        }
+      }
+      /* Close the socket, now that we are done with it. */
+      close(canSocket);
+    }
+  }
+ 
+  /* Give the result back to the caller. */
+  return result;
+} /*** end of AppIsCanInterface ***/
 
 
 /************************************************************************************//**
