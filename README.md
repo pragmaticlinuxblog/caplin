@@ -67,7 +67,7 @@ After building your CAPLin application, you can run it directly from the `build`
 ./canapp
 ```
 
-Note that your CAPLin application automatically detects and connects to the first SocketCAN network interface it finds on your system. When multiple SocketCAN network interface are available, you can select the one to use by specifying its name as a command-line argument, e.g. `./canapp can1`. 
+Note that your CAPLin application automatically detects and connects to the first SocketCAN network interface it finds on your system. When multiple SocketCAN network interfaces are available, you can select the one to use by specifying its name as a command-line argument, e.g. `./canapp can1`. 
 
 Once your application runs, you can press <kbd>ESC</kbd> or <kbd>CTRL</kbd>+<kbd>C</kbd> to exit. 
 
