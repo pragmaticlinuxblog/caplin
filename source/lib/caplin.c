@@ -86,6 +86,7 @@ static void AppInterruptSignalHandler(int signum);
 ****************************************************************************************/
 int main(int argc, char *argv[])
 {
+  int result = EXIT_SUCCESS;
   bool canConnected = false;
 
   /* Initialize locals. */
@@ -103,7 +104,7 @@ int main(int argc, char *argv[])
     /* Display usage information. */
     AppDisplayHelp(argv[0]);
     /* Exit the program. */
-    return EXIT_SUCCESS;
+    return result;
   }
 
   /* Initialize the timer driver. */
@@ -127,6 +128,8 @@ int main(int argc, char *argv[])
     AppDisplayHelp(argv[0]);
     /* Display error message. */
     printf("ERROR: Could not connect to SocketCAN network interface \"%s\".\n", canDevice);
+    /* Update the result. */
+    result = EXIT_FAILURE;
   }
   else
   {
@@ -159,8 +162,8 @@ int main(int argc, char *argv[])
   /* Terminate the input key detection driver. */
   KeysTerminate();
 
-  /* Exit the program. */
-  return EXIT_SUCCESS;
+  /* Give the result back to the caller. */
+  return result;
 } /*** end of main ***/
 
 
