@@ -77,7 +77,7 @@ Refer to CAPLin's help info for additional details:
 
 ## Installing your CAPLin application
 
-Optionally, you can install your CAPLin application system-wide, making it available to all user. The *CMakeLists.txt* contains details on how to perform this step. To install the application on your Linux system, run this command from the `build` subdirectory:
+Optionally, you can install your CAPLin application system-wide, making it available to all users. The *CMakeLists.txt* contains details on how to perform this step. To install the application on your Linux system, run this command from the `build` subdirectory:
 
 - `sudo make install`
 
