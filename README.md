@@ -12,6 +12,10 @@ CAPLin resembles Vector CAPL scripts. Just like CAPL, it's an event driven progr
 
 The only real downside, compared to a CAPL script, is that you don't have direct access to the CAN messages and signals from a CANdb DBC database file. However, you can circumvent this by using the [cantools](https://cantools.readthedocs.io/en/latest/#the-generate-c-source-subcommand) package to generate a C-source and -header file from your DBC database file, and then integrate these into your CAPLin application.
 
+The PragmaticLinux blog dedicated an entire article towards getting started with the CAPLin framework:
+
+* [CAPLin framework to build a SocketCAN node application in C](https://www.pragmaticlinux.com/2021/11/caplin-framework-to-build-a-socketcan-node-application-in-c/)
+
 ## What you need
 
 To obtain and build CAPLin applications, make sure that your Linux system has C development and Git related packages installed:
